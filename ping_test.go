@@ -36,8 +36,19 @@ func test_Ping(ip net.IP, port int) {
 	fmt.Printf("ping, packetLoss: %.2f%%, avgRtt: %.3fms\n", packetLoss, avgRtt)
 }
 
+func test_PingHost(host string, port int) {
+
+	packetLoss, avgRtt, err := PingHost(host, port, nil)
+	if err != nil {
+		fmt.Println("ping host failed, err: ", err.Error())
+	}
+
+	fmt.Printf("ping host, packetLoss: %.2f%%, avgRtt: %.3fms\n", packetLoss, avgRtt)
+}
+
 func Test_ping(t *testing.T) {
 	test_IcmpPing(net.ParseIP("45.43.41.130"))
 	test_TcpPing(net.ParseIP("45.43.41.130"), 80)
 	test_Ping(net.ParseIP("45.43.41.130"), 80)
+	test_PingHost("www.baidu.com", 80)
 }

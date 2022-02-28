@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"time"
@@ -13,6 +14,7 @@ type Config struct {
 	Interval time.Duration
 	Timeout  time.Duration
 	Ports    []int
+	Resolver *net.Resolver
 }
 
 var defaultConfig = &Config{
@@ -20,6 +22,7 @@ var defaultConfig = &Config{
 	Interval: time.Millisecond,
 	Timeout:  time.Second,
 	Ports:    []int{443, 80},
+	Resolver: net.DefaultResolver,
 }
 
 func icmpPing(ip net.IP, config *Config) (packetLoss, avgRtt float64, err error) {
@@ -95,4 +98,44 @@ func Ping(ip net.IP, port int, config *Config) (packetLoss, avgRtt float64, err 
 		config = defaultConfig
 	}
 	return ping(ip, port, config)
+}
+
+func pingHost(host string, port int, config *Config) (packetLoss, avgRtt float64, err error) {
+	var ips []string
+	ip := net.ParseIP(host)
+	if ip != nil {
+		ips = append(ips, ip.String())
+	} else {
+		ips, err = config.Resolver.LookupHost(context.Background(), host)
+		if err != nil {
+			return -1, -1, err
+		}
+	}
+
+	count := 0
+	for i := 0; i < len(ips); i++ {
+		ip := net.ParseIP(ips[i])
+		if ip != nil {
+			packetLoss0, avgRtt0, err := ping(ip, port, config)
+			if err != nil || packetLoss0 == 100 {
+				continue
+			}
+			count++
+			packetLoss += packetLoss0
+			avgRtt += avgRtt0
+		}
+	}
+
+	if count != 0 {
+		return packetLoss/float64(count), avgRtt/float64(count), nil
+	} else {
+		return -1, -1, fmt.Errorf("icmpPing/tcpPing %s:%d failed", host, port)
+	}
+}
+
+func PingHost(host string, port int, config *Config) (packetLoss, avgRtt float64, err error) {
+	if config == nil {
+		config = defaultConfig
+	}
+	return pingHost(host, port, config)
 }
