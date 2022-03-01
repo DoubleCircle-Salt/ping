@@ -31,6 +31,7 @@ func icmpPing(ip net.IP, config *Config) (packetLoss, avgRtt float64, err error)
 	if err != nil {
 		return -1, -1, err
 	}
+	pinger.SetPrivileged(true)
 	pinger.OnFinish = func(stats *gping.Statistics) {
 		packetLoss = stats.PacketLoss
 		avgRtt = float64(stats.AvgRtt.Nanoseconds())/1000000
