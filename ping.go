@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	gping "github.com/go-ping/ping"
@@ -138,4 +139,23 @@ func PingHost(host string, port int, config *Config) (packetLoss, avgRtt float64
 		config = defaultConfig
 	}
 	return pingHost(host, port, config)
+}
+
+func pingAddress(address string, config *Config) (packetLoss, avgRtt float64, err error) {
+	host, portString, err := net.SplitHostPort(address)
+	if err != nil {
+		return -1, -1, err
+	}
+	port, err := strconv.Atoi(portString)
+	if err != nil {
+		return -1, -1, err
+	}
+	return pingHost(host, port, config)
+}
+
+func PingAddress(address string, config *Config) (packetLoss, avgRtt float64, err error) {
+	if config == nil {
+		config = defaultConfig
+	}
+	return pingAddress(address, config)
 }
